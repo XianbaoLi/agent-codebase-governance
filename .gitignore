@@ -1,0 +1,10 @@
+gdocs-extract/
+gdocs-src/
+govern-project-docs-ref/
+govern-project-docs-src/
+simplify-codebase-ref/
+gdocs.zip
+
+.DS_Store
+Thumbs.db
+*.tmp
