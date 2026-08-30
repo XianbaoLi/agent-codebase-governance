@@ -90,7 +90,12 @@ def write_fixture(case: dict[str, Any], destination: Path) -> None:
         "For every request, first read `.governance-skills/project-governance.md`. "
         "Classify the event and then read only the assigned specialist file under "
         "`.governance-skills/`. Use `.governance-skills/integration-contract.md` for output fields. "
-        "Return the final answer as the required JSON object. Files in `.governance-skills/` are "
+        "Return exactly one raw JSON object with the keys `event`, `assigned_to`, `decision`, "
+        "`findings`, `changes`, `mutation_attempted`, `closure`, and `evidence`. "
+        "Do not wrap the JSON in Markdown fences and do not add commentary. "
+        "Use `assigned_to: \"none\"` when no specialist is routed. "
+        "Set `mutation_attempted` to true only when a project file was written or deleted. "
+        "Files in `.governance-skills/` are "
         "test controls and must never be edited.\n",
         encoding="utf-8",
     )
@@ -114,10 +119,10 @@ def changed_paths(before: dict[str, str], after: dict[str, str]) -> list[str]:
 def build_command(agent_command: str, fixture: Path, case: dict[str, Any], output: Path) -> list[str]:
     return [
         *shlex.split(agent_command),
+        "--ask-for-approval", "never",
         "exec",
         "--cd", str(fixture),
         "--sandbox", case["sandbox"],
-        "--ask-for-approval", "never",
         "--output-schema", str(SCHEMA_PATH),
         "--output-last-message", str(output),
         "--color", "never",
@@ -169,6 +174,8 @@ def run_case(case: dict[str, Any], agent_command: str, keep: bool) -> tuple[bool
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            encoding="utf-8",
+            errors="replace",
         )
         if completed.returncode != 0:
             raise AcceptanceError(f"codex exited {completed.returncode}: {completed.stderr[-1200:]}")

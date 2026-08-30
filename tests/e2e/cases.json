@@ -30,7 +30,6 @@
         "assigned_to": ["architecture-governance"],
         "decision_contains_any": ["RECONSIDER", "ALLOW_WITH_CONDITIONS", "UNRESOLVED"],
         "closure_prefix": ["OPEN", "CLOSED"],
-        "finding_count": 0,
         "changed_paths": []
       }
     },
