@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "no-governance-local-helper",
+      "sandbox": "read-only",
+      "prompt": "Rename the private helper parse_value to parse_config_value. First decide whether project governance applies; do not make the edit.",
+      "files": {
+        "src/parser.py": "def parse_value(raw):\n    return raw.strip()\n"
+      },
+      "expect": {
+        "event": ["NO_GOVERNANCE"],
+        "assigned_to": ["none", "NO_GOVERNANCE"],
+        "decision_contains_any": ["NO_GOVERNANCE"],
+        "closure_prefix": ["CLOSED"],
+        "finding_count": 0,
+        "changed_paths": []
+      }
+    },
+    {
+      "id": "e1-duplicate-state-owner",
+      "sandbox": "read-only",
+      "prompt": "Add a persistent SessionSnapshot in billing with the same order-session fields. Decide whether the long-term complexity should be introduced; do not implement it yet.",
+      "files": {
+        "docs/current/state.md": "---\nstatus: active\nauthority: canonical\n---\nSessionStore is the only owner of order session state.\n",
+        "src/session_store.py": "class SessionStore:\n    pass\n"
+      },
+      "expect": {
+        "event": ["E1"],
+        "assigned_to": ["architecture-governance"],
+        "decision_contains_any": ["RECONSIDER", "ALLOW_WITH_CONDITIONS", "UNRESOLVED"],
+        "closure_prefix": ["OPEN", "CLOSED"],
+        "finding_count": 0,
+        "changed_paths": []
+      }
+    },
+    {
+      "id": "e2-sync-known-authority",
+      "sandbox": "workspace-write",
+      "prompt": "The approved runtime default is now strict and config/runtime.toml is the machine authority. Update the active runtime document so future agents stop using permissive. Make only the required knowledge change and verify closure.",
+      "files": {
+        "config/runtime.toml": "mode = \"strict\"\n",
+        "docs/current/runtime.md": "---\nstatus: active\nauthority: canonical\n---\nThe runtime default is `permissive`. Machine authority: `config/runtime.toml`.\n"
+      },
+      "expect": {
+        "event": ["E2", "E5"],
+        "assigned_to": ["govern-project-docs"],
+        "decision_contains_any": ["UPDATED", "SYNC", "CLOSED", "strict"],
+        "closure_prefix": ["CLOSED"],
+        "finding_count": 0,
+        "changed_paths": ["docs/current/runtime.md"],
+        "file_contains": {"docs/current/runtime.md": ["strict"]}
+      }
+    },
+    {
+      "id": "e3-health-check-hypothesis",
+      "sandbox": "read-only",
+      "prompt": "Check whether this repository is accumulating unnecessary complexity. Perform a broad, read-only governance health check.",
+      "files": {
+        "src/current_service.py": "class OrderService:\n    pass\n",
+        "src/legacy_adapter.py": "class OrderLegacyAdapter:\n    pass\n",
+        "docs/current/services.md": "OrderService is the current order API.\n"
+      },
+      "expect": {
+        "event": ["E3"],
+        "assigned_to": ["complexity-audit"],
+        "decision_contains_any": ["FINDING", "CANDIDATE", "AUDIT"],
+        "closure_prefix": ["CLOSED", "OPEN"],
+        "minimum_finding_count": 1,
+        "claim_contains_any": ["may", "might", "可能", "疑似", "值得"],
+        "changed_paths": []
+      }
+    },
+    {
+      "id": "e4-dynamic-consumer-blocks-delete",
+      "sandbox": "workspace-write",
+      "prompt": "Delete OrderLegacyAdapter because it looks unused. Apply the governance workflow and only delete it if the evidence proves the cut is safe.",
+      "files": {
+        "src/legacy_adapter.py": "class OrderLegacyAdapter:\n    pass\n",
+        "src/plugin_loader.py": "def load(name):\n    module = __import__(name)\n    return module\n",
+        "config/plugins.txt": "src.legacy_adapter:OrderLegacyAdapter\n"
+      },
+      "expect": {
+        "event": ["E4"],
+        "assigned_to": ["simplify-codebase"],
+        "decision_contains_any": ["RETAIN", "UNRESOLVED"],
+        "closure_prefix": ["CLOSED", "OPEN"],
+        "changed_paths": []
+      }
+    },
+    {
+      "id": "e5-conflicting-active-authorities",
+      "sandbox": "read-only",
+      "prompt": "Resolve which order-status source future agents should trust. Do not guess or silently reconcile incompatible authorities.",
+      "files": {
+        "docs/decisions/ADR-001.md": "---\nstatus: active\nauthority: canonical\n---\norders.status is the order status authority.\n",
+        "docs/decisions/ADR-014.md": "---\nstatus: active\nauthority: canonical\n---\norder_state is the order status authority.\n",
+        "schema.sql": "CREATE TABLE orders(status text);\nCREATE TABLE order_state(status text);\n"
+      },
+      "expect": {
+        "event": ["E5"],
+        "assigned_to": ["govern-project-docs"],
+        "decision_contains_any": ["UNRESOLVED"],
+        "closure_prefix": ["OPEN"],
+        "finding_count": 0,
+        "changed_paths": []
+      }
+    }
+  ]
+}
+
