@@ -1,0 +1,22 @@
+name: Governance acceptance harness
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check acceptance contracts
+        run: python tests/e2e/run_e2e.py --check
+      - name: Self-test acceptance harness
+        run: python tests/e2e/run_e2e.py --agent-command "python tests/e2e/fake_codex.py"

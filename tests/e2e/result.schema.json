@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event",
+    "assigned_to",
+    "decision",
+    "findings",
+    "changes",
+    "mutation_attempted",
+    "closure",
+    "evidence"
+  ],
+  "properties": {
+    "event": {
+      "enum": ["E1", "E2", "E3", "E4", "E5", "NO_GOVERNANCE"]
+    },
+    "assigned_to": {
+      "type": "string"
+    },
+    "decision": {
+      "type": "string"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "scope", "claim", "evidence", "confidence"],
+        "properties": {
+          "type": {"type": "string"},
+          "scope": {"type": "string"},
+          "claim": {"type": "string"},
+          "evidence": {"type": "string"},
+          "confidence": {"enum": ["low", "medium", "high"]}
+        }
+      }
+    },
+    "changes": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "mutation_attempted": {"type": "boolean"},
+    "closure": {"type": "string"},
+    "evidence": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  }
+}
+
