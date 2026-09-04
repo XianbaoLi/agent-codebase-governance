@@ -1,84 +1,83 @@
 ---
 name: complexity-audit
-version: 0.1.0
-description: 对项目做只读的广度复杂度与治理漂移扫描，只发现候选，不删除代码，输出 Governance Finding 而不是确定结论。
+version: 0.2.0
+description: 对项目做只读治理审计，发现项目实现、有效决策、契约、文档和 Agent Context 之间的漂移与失效残留；不做通用代码质量或复杂度审计。
 ---
 
-# Complexity Audit
+# Governance Audit
 
-这个 Skill 回答：**项目哪些地方值得进一步调查？**
+这个 Skill 回答：**项目当前状态是否已经偏离有效的项目决策与治理边界？**
 
-它是广度发现。深度验证交给 `simplify-codebase`。它不删除代码，不做完整 consumer / contract 证明，不计算伪精确的 Entropy Score。
+它是 read-only 的 `DID IT` 检查。它不负责判断代码是否优雅、是否足够简洁，也不因为一个模块“看起来复杂”就提出删除建议。
 
-## 范围
+## 进入条件
 
-对仓库做结构化的 read-only 调查，重点覆盖治理对象：
+至少满足一个条件才进入治理审计：
 
-- `Code`
-- `Architecture`
-- `Concept / Abstraction`
-- `State`
-- `Contract`
-- `Compatibility`
-- `Documentation`
-- `Agent Context`
+- 存在一个可识别的有效架构决策或约束，可与实现对照；
+- Code / ADR / active docs / contract 之间出现不一致迹象；
+- 某个历史决策已 superseded / abandoned，但可能仍留下 artifact；
+- 某段 historical context 可能继续影响 Agent 当前决策；
+- 一次治理变化执行后需要做 Closure 前验证。
 
-允许做的轻量调查：
+否则返回 `NO_GOVERNANCE_FINDING`，不要退化成普通 code review。
 
-- 静态 references；
-- 明显 consumers；
-- 目录结构与模块边界；
-- 当前 active docs；
-- 简单历史信息。
+## 调查范围
 
-不追求完整证明。发现一个“看起来值得查”的对象即可产出 Finding。
+允许只读检查：
 
-## 复杂度类型
+- 代码与模块边界；
+- references 与明显 consumers；
+- contracts / schemas / compatibility 层；
+- active / canonical docs；
+- ADR 生命周期；
+- superseded / historical docs；
+- 与当前变化有关的 git history；
+- Agent context routing（如 `AGENTS.md`）。
 
-使用以下可观察类型：
+## Finding 类型
 
-- `duplicated-concept`
-- `duplicated-state`
-- `obsolete-contract`
-- `obsolete-compatibility`
-- `redundant-abstraction`
-- `governance-drift`
-- `unknown-complexity`
+- `decision-drift`
+- `authority-conflict`
+- `obsolete-artifact`
+- `superseded-context-leak`
+- `orphaned-responsibility`
+- `contract-drift`
+- `unknown-governance-risk`
 
-`unknown-complexity` 是合法类型。证据不足时保留它，不要为了分类而强行推断。
-
-## 产出 Governance Finding
-
-每个候选输出一个 `Governance Finding`：
+## Governance Finding
 
 ```text
-type: <复杂度类型>
-scope: <符号、路径、模块或边界>
-claim: <可证伪的假设>
-evidence: <已观察到的线索>
+type: <finding type>
+scope: <符号、路径、模块、文档或边界>
+expected: <根据当前有效 authority 应该是什么状态>
+observed: <实际观察到什么>
+claim: <可证伪的治理假设>
+evidence: <证据>
 confidence: low | medium | high
+next_validation: <下一步如何验证>
 ```
 
-可选字段：`impact`、`blast_radius`、`recommended_action`。
+`confidence` 表示证据对 claim 的支持强度，不表示严重性。
 
-`confidence` 表示证据对 claim 的支持强度，不表示问题严重性。
+## 不属于本 Skill
+
+- lint / formatting / naming；
+- 通用 duplicated code；
+- 通用 Clean Code review；
+- “代码太多所以应该删”；
+- “抽象太复杂所以应该重构”；
+- 没有当前项目 authority 依据的架构偏好；
+- 直接修改、删除或合并代码。
 
 ## 交付
 
 报告：
 
-1. 覆盖范围和明确排除的领域；
-2. 0..N 个 Finding；
-3. 每个 Finding 的下一步验证方向；
-4. 本轮未覆盖的盲区。
+1. 本轮使用了哪些 authority / constraints；
+2. 覆盖范围与明确盲区；
+3. 0..N 个 `Governance Finding`；
+4. 每个 Finding 的下一步验证方向；
+5. 是否足以进入 `governance-remediation`。
 
-没有发现高价值 Candidate 也是成功结果。
-
-## 边界
-
-- 不修改文件；
-- 不直接删除、合并或重构；
-- 不建立 findings registry 或 complexity database；
-- 不把静态 smell 写成已确认问题；
-- 不冒充 `simplify-codebase` 做深度证明。
-
+没有 Finding 是成功结果。
