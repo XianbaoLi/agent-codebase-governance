@@ -1,60 +1,83 @@
 ---
 name: project-governance
-version: 0.1.0
-description: 识别并路由具有长期复杂度影响的治理事件，协调后续治理影响，并检查 Closure；普通工程改动返回 NO_GOVERNANCE，不亲自分析、删除或决定权威。
+version: 0.2.0
+description: 识别并路由具有长期项目演化影响的治理事件，协调 SHOULD、DID IT、Remediation 与 Closure；普通工程改动返回 NO_GOVERNANCE。
 ---
 
 # Project Governance
 
-这是治理系统的路由器和协调器，不是分析器。它分类治理事件、分派专业能力、传递 ephemeral artifact、检查治理影响是否收敛。
+这是项目演化治理系统的 Trigger、Router 和 Closure 协调器。
 
-它不亲自进行架构分析、代码删除、consumer analysis 或文档权威判断。
+它不教 Agent 如何实现代码，也不把 Ponytail、simplify-codebase、TDD、通用 code review 等工具变成治理流程的一部分。
 
-## 分类事件
+## Trigger
 
-先判断这是不是普通工程任务。如果只是 helper、局部重构、测试补充、变量重命名、内部算法替换，或没有长期治理影响，返回 `NO_GOVERNANCE`。
+先判断任务是否会改变长期项目状态。普通 helper、局部算法替换、变量重命名、常规测试补充、无长期影响的局部重构等返回 `NO_GOVERNANCE`。
+
+需要治理的典型信号：
+
+- 新增或改变长期架构边界；
+- 新增 state ownership、持久状态、公共 contract、schema/protocol、compatibility；
+- 改变 Agent 后续必须相信的长期事实；
+- 发现 Code / ADR / docs / contract 不一致；
+- 已 superseded / abandoned 的决策可能仍留下 artifact 或 context；
+- 一次治理变化执行后需要确认是否闭合。
+
+## 事件
 
 | 事件 | 判断要点 | 路由 |
 | --- | --- | --- |
-| `E1 Structural Change` | 新增子系统、长期 state ownership、持久状态、公共契约、schema/protocol、插件机制、兼容机制或跨模块抽象 | `architecture-governance` |
-| `E2 Knowledge Change` | 当前有效事实或长期约束发生变化；继续相信旧文档会让 Agent 做错决策 | `govern-project-docs` |
-| `E3 Health Check` | 技术债、重复设计、架构腐化、code/docs drift、治理审计 | `complexity-audit` |
-| `E4 Simplification Candidate` | 用户已指出明确对象，如某个 Manager、adapter、重复状态 | `simplify-codebase` |
-| `E5 Governance Drift` | 本应一致的事实不一致，如 Code != Documentation、Code != ADR、Active Doc A != Active Doc B | `govern-project-docs`，先确定 authority |
+| `E1 Structural Change` | 长期结构、状态、契约或边界发生变化 | `architecture-governance` |
+| `E2 Knowledge Change` | active/canonical knowledge 发生变化 | `govern-project-docs` |
+| `E3 Governance Audit` | 需要检查项目是否偏离当前有效决策 | `complexity-audit` |
+| `E4 Remediation Candidate` | 已有治理 Finding / authority conflict，需要修正、退役或删除 | `governance-remediation` |
+| `E5 Governance Drift` | Code != Documentation、Code != ADR、Active Doc A != Active Doc B | 先确认 authority，再进入 Audit / Remediation |
 
-`E4` 不再经过 `complexity-audit`，但必须把用户的判断转换为假设，而不是既定结论。
+## SHOULD
 
-## 路由规则
+对于 `E1`，由 `architecture-governance` 给出是否允许变化以及 constraints。
 
-`E5` 发现漂移时，不能默认“文档旧了”。也可能是代码违反了仍然有效的架构约束。必须先确定 authority；如果无法判断，输出 `UNRESOLVED`，不要自行折中。
+Governance 只把 constraints 交给执行 Agent，不规定 `HOW`。例如可以约束“不改变公共 API”“不得新增长期 state owner”，但不应进一步指定设计模式或代码组织，除非那本身就是已有 authority。
 
-## 协调
+## DID IT
 
-接收并传递 `Governance Finding` 和 `Governance Change`：
+变化执行后，需要判断实际结果是否满足：
 
-- 收到 `Governance Finding`：如果用户要求验证具体候选，路由到 `simplify-codebase`；否则只在一次协同中保持为假设。
-- 收到 `Governance Change`：路由到 `govern-project-docs`，由它同步权威知识与 Agent 当前上下文。
+- 原决策与 constraints；
+- 当前 contract；
+- active/canonical documentation；
+- Agent context authority。
 
-不要把 Finding 或 Change 持久化成 registry。
+语义审计路由给 `complexity-audit`；确定性测试/CI 可作为 verification evidence。
 
-## 检查 Closure
+## Remediation
+
+`Governance Finding` 默认只是 hypothesis。只有在需要让项目重新一致时才路由 `governance-remediation`。
+
+Remediation 的合法结果：`FIX` / `RETIRE` / `REMOVE` / `RETAIN` / `UNRESOLVED`。
+
+不允许因为一般代码复杂度问题自动进入删除流程。
+
+## Closure
 
 | 检查项 | 取值 |
 | --- | --- |
 | implementation consistent? | `yes` / `no` / `na` |
 | contract consistent? | `yes` / `no` / `na` |
 | active documentation consistent? | `yes` / `no` / `na` |
+| superseded context isolated? | `yes` / `no` / `na` |
 | required verification passed? | `yes` / `no` / `na` |
 
-只有不存在未处理的治理后果，才输出 `CLOSED`。否则输出仍未收敛的原因和下一条路由。
+只有不存在未处理治理后果，才输出 `CLOSED`。
 
 ## 输出
 
 ```text
 event: E1 | E2 | E3 | E4 | E5 | NO_GOVERNANCE
-assigned_to: <skill>
+phase: TRIGGER | SHOULD | DID_IT | REMEDIATION | CLOSURE
+assigned_to: <skill | agent | none>
+constraints: <0..N>
 findings: <0..N ephemeral Governance Finding>
 changes: <0..N ephemeral Governance Change>
 closure: CLOSED | OPEN(...)
 ```
-
