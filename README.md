@@ -1,84 +1,110 @@
 # Agent Codebase Governance
 
-面向 Codex / AI Agent 长期开发场景的复杂度治理系统。它管理复杂度从“产生、存续、发现到回收”的完整生命周期，不替代普通代码规范检查，也不在每次普通工程改动上增加审批。
+面向 Codex / AI Agent 长期开发场景的**项目演化治理系统**。
+
+它不负责教 Agent 如何“更好地写代码”，也不把各种软件工程最佳实践组合成一个 Super Skill。它只关心一件事：**当项目发生长期影响的变化时，这次变化是否应该发生、是否遵守既有约束、变化之后项目是否重新收敛。**
+
+一句话边界：
+
+> Governance controls how the project evolves, not how the agent codes.
+
+## 核心闭环
+
+```text
+Proposed Change
+      |
+      v
+   SHOULD ?        <- 这次变化是否应该发生，边界是什么
+      |
+      v
+   Agent executes  <- HOW 默认交给 Agent / 专用工具
+      |
+      v
+   DID IT ?        <- 实际变化是否符合约束
+      |
+      v
+    Audit
+      |
+      +--> aligned --------> Closure
+      |
+      +--> drifted --------> Remediation / Delete ----> Closure
+```
+
+治理系统重点负责 `SHOULD` 和 `DID IT`。中间的 `HOW` 不是本项目的产品边界。
 
 ## 治理原则
 
-1. **Justify before add：新增前先说明理由**
-   新增长期复杂度之前，必须说明为什么现有系统无法承担这项职责。
+1. **Justify before structural change**：引入长期结构、状态、契约或抽象前，先证明为什么需要。
+2. **One authority for each fact**：会影响 Agent 后续决策的长期事实，同一时间只能有明确权威来源。
+3. **Audit for governance drift**：审计的是项目是否偏离已确认的决策和边界，不是泛化代码质量检查。
+4. **Prove before remediation**：修正或删除之前必须建立治理证据，不能因为“看起来复杂”就动手。
+5. **Closure over ceremony**：代码改完不代表治理结束，必须确认实现、契约、active docs 和必要验证重新一致。
 
-2. **One authority for each fact：每个事实只有一个权威来源**
-   对会影响 Agent 后续决策的事实、架构约束和设计决策，同一时间只能存在一个明确的权威来源。
-
-3. **Audit what remains：持续审计存量**
-   曾经合理的复杂度不代表永远合理，需要持续检查存量复杂度和治理漂移。
-
-4. **Prove before delete：先证明，再删除**
-   删除已有复杂度之前必须建立证据，不能因为“看起来没用”就删除。
-
-元原则：**Governance must not become another source of entropy。** 治理系统自身必须保持轻量。除非有真实案例证明必要，否则不新增长期状态文件、Registry、数据库式 YAML 或复杂 workflow engine。
+元原则：**Governance must not become another source of entropy。**
 
 ## 系统组成
 
 | 组件 | 回答的问题 | 角色 |
 | --- | --- | --- |
-| `project-governance` | 当前属于哪种治理事件，应路由给谁，后续影响是否收敛 | 路由器与协调器 |
-| `architecture-governance` | 这个长期复杂度该不该新增 | 新复杂度入口 |
-| `govern-project-docs` | 当前什么知识具有权威性，Agent 应该相信什么 | 知识与上下文权威 |
-| `complexity-audit` | 项目哪些地方可能存在不必要复杂度或治理漂移 | 广度发现 |
-| `simplify-codebase` | 某个明确复杂度能不能安全删除、合并或必须保留 | 深度验证与回收 |
+| `project-governance` | 这是不是治理事件，下一步由谁处理，最后是否收敛 | Trigger / Router / Closure |
+| `architecture-governance` | 这个长期变化该不该发生，允许到什么边界 | SHOULD |
+| `govern-project-docs` | 当前哪些长期知识仍然有效，Agent 应该相信什么 | Context / Authority |
+| `complexity-audit` | 项目是否出现治理漂移、失效决策残留或上下文污染 | DID IT / Audit |
+| `governance-remediation` | 已确认的治理偏离应修正、退役、删除还是保留 | Remediation |
 
-治理是例外路径，不是默认路径。普通 helper、局部重构、测试补充、变量重命名、内部算法替换等应返回 `NO_GOVERNANCE`。
+这些组件都服务于同一个“项目演化闭环”，不是独立最佳实践集合。
+
+## 明确不属于本项目
+
+- 通用 Clean Code / code review；
+- 通用 TDD、测试生成或安全扫描；
+- 自动选择设计模式；
+- 因为“代码很多”就做通用简化；
+- 因为“抽象复杂”就做通用重构；
+- 最小代码哲学、YAGNI 执行策略等实现层约束。
+
+这些能力可以由 Agent 或独立工具完成，但不作为本项目的组成部分。
 
 ## 事件路由
 
 | 事件 | 判断要点 | 默认路由 |
 | --- | --- | --- |
 | `E1 Structural Change` | 新增子系统、长期 state ownership、持久状态、公共契约、schema/protocol、插件机制、兼容机制或跨模块抽象 | `architecture-governance` |
-| `E2 Knowledge Change` | 当前有效事实或长期约束发生变化，继续相信旧知识会做出错误决策 | `govern-project-docs` |
-| `E3 Health Check` | 技术债、重复设计、架构腐化、code/docs drift、治理审计 | `complexity-audit` |
-| `E4 Simplification Candidate` | 用户已指出明确对象，如某个 Manager、adapter、重复状态 | `simplify-codebase` |
-| `E5 Governance Drift` | Code != Documentation、Code != ADR、Active Doc A != Active Doc B 等 | `govern-project-docs`，先确定 authority |
+| `E2 Knowledge Change` | 当前有效事实或长期约束发生变化 | `govern-project-docs` |
+| `E3 Governance Audit` | code/docs/ADR drift、失效决策残留、obsolete artifact、上下文污染 | `complexity-audit` |
+| `E4 Remediation Candidate` | 已有证据指出某个治理偏离或失效 artifact，需要验证并修正/退役/删除 | `governance-remediation` |
+| `E5 Governance Drift` | Code != Documentation、Code != ADR、Active Doc A != Active Doc B | 先确定 authority，再审计/修正 |
 
-`E5` 发现漂移时，不能默认“文档旧了”。也可能是代码违反了仍然有效的架构约束。无法判断权威时输出 `UNRESOLVED`，不要自行折中。
+普通 helper、局部算法替换、变量重命名、常规测试补充等没有长期治理影响的任务应返回 `NO_GOVERNANCE`。
+
+## 审计与删除的边界
+
+审计保留，但只做**治理审计**：
+
+- 当前实现是否违反已确认架构边界；
+- ADR、active docs 与代码是否表达不同版本的系统；
+- 已 superseded / abandoned 的决策是否仍留下会误导 Agent 的 artifact；
+- 失败实验、旧兼容层、旧状态 owner 是否已经失去当前决策依据。
+
+删除也保留，但只删除**有治理证据证明应退役的 artifact**。删除前必须检查 consumer、contract、运行时使用、历史原因和回滚影响。
 
 ## 典型工作流
 
-1. **防止熵新增**：`E1` -> `architecture-governance` 判断是否新增；若允许且改变长期知识，产出 `Governance Change` -> `govern-project-docs` 同步知识 -> `project-governance` 检查 Closure。
-2. **修复知识漂移**：`E2/E5` -> `govern-project-docs` 确定权威并更新 active/superseded 路由；无法确定时报告 `UNRESOLVED`。
-3. **回收存量熵**：`E3` -> `complexity-audit` 产出 `Governance Finding` -> `simplify-codebase` 深度验证 -> 若发生真实结构变化，产出 `Governance Change` -> `govern-project-docs` 同步长期权威知识 -> Closure。
+1. **新增变化**：`E1 -> architecture-governance -> Agent execution -> complexity-audit/closure`。
+2. **知识变化**：`E2/E5 -> govern-project-docs` 确定 authority，并隔离 superseded context。
+3. **发现偏离**：`E3 -> complexity-audit -> Governance Finding`。
+4. **修复/退役**：已确认 Finding -> `governance-remediation` -> 必要时产生 `Governance Change` -> `govern-project-docs` -> Closure。
 
-## 目录结构
+## 与其他工具的关系
 
-```text
-.
-├── README.md
-├── GOVERNANCE_MODEL.md
-├── integration-contract.md
-├── project-governance/
-│   └── SKILL.md
-├── architecture-governance/
-│   └── SKILL.md
-├── complexity-audit/
-│   └── SKILL.md
-├── govern-project-docs/
-│   ├── SKILL.md
-│   └── UPSTREAM.md
-├── integrations/
-│   └── simplify-codebase.md
-└── tests/
-    └── validation-cases.md
-```
+Ponytail、simplify-codebase 等可以独立存在，但**不是本项目的组成部分，也不是治理生命周期中的必经阶段**。
+
+- Ponytail 关注实现阶段如何避免 over-engineering；
+- simplify-codebase 关注已有代码复杂度如何化简；
+- 本项目关注一次长期项目变化从决策、执行、审计到退役是否形成闭环。
 
 ## 第一版边界
 
-- 覆盖治理对象：`Code`、`Architecture`、`Concept / Abstraction`、`State`、`Contract`、`Compatibility`、`Documentation`、`Agent Context`。
-- 使用可观察复杂度类型，不引入伪精确的 Entropy Score。
-- `unknown-complexity` 是合法类型，不需要为了分类而强行推断。
-- `Governance Finding` 和 `Governance Change` 是 ephemeral artifact，不建立长期 findings 数据库。
-- 不复制 `govern-project-docs` 与 `simplify-codebase` 的已有实现，只定义协议和边界。
+覆盖治理对象：`Code`、`Architecture`、`Concept / Abstraction`、`State`、`Contract`、`Compatibility`、`Documentation`、`Agent Context`。
 
-## 验证
-
-最小验证案例见 [tests/validation-cases.md](tests/validation-cases.md)，覆盖防止熵新增、权威漂移修复和存量熵回收三个场景。
-
+`Governance Finding` 和 `Governance Change` 都是 ephemeral artifact，不建立长期 findings database。治理系统自身不新建复杂 workflow engine、长期 Registry 或额外事实数据库，除非真实案例证明必要。
