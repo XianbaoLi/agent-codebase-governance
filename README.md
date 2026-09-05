@@ -65,6 +65,16 @@ Proposed Change
 
 这些能力可以由 Agent 或独立工具完成，但不作为本项目的组成部分。
 
+## 真实触发入口
+
+`governance-trigger.md` 是应暴露给普通 Agent 的最小常驻触发面。它只判断“这次任务是否可能影响长期项目演化”。
+
+- 普通 helper、命名、局部算法、一般测试/重构直接走 `NO_GOVERNANCE`；
+- 命中长期架构、state、contract、authority、compatibility、context drift 等信号后，才加载 `project-governance`；
+- `project-governance` 再路由到唯一需要的 specialist Skill。
+
+因此不是“所有请求先跑一遍完整 Governance”，而是“轻量 Trigger 常驻，完整治理按需加载”。
+
 ## 事件路由
 
 | 事件 | 判断要点 | 默认路由 |
@@ -107,4 +117,4 @@ Ponytail、simplify-codebase 等可以独立存在，但**不是本项目的组�
 
 覆盖治理对象：`Code`、`Architecture`、`Concept / Abstraction`、`State`、`Contract`、`Compatibility`、`Documentation`、`Agent Context`。
 
-`Governance Finding` 和 `Governance Change` 都是 ephemeral artifact，不建立长期 findings database。治理系统自身不新建复杂 workflow engine、长期 Registry 或额外事实数据库，除非真实案例证明必要。
+`Governance Finding`、`Governance Change` 和 lifecycle `trace` 都是 ephemeral artifact，不建立长期 findings / workflow database。治理系统自身不新建复杂 workflow engine、长期 Registry 或额外事实数据库，除非真实案例证明必要。

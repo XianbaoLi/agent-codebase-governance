@@ -20,11 +20,13 @@ ROOT = Path(__file__).resolve().parents[2]
 E2E = Path(__file__).resolve().parent
 CASES_PATH = E2E / "cases.json"
 SCHEMA_PATH = E2E / "result.schema.json"
+TRIGGER_PATH = ROOT / "governance-trigger.md"
 SPECIALISTS = {
     "project-governance": ROOT / "project-governance" / "SKILL.md",
     "architecture-governance": ROOT / "architecture-governance" / "SKILL.md",
     "complexity-audit": ROOT / "complexity-audit" / "SKILL.md",
     "govern-project-docs": ROOT / "govern-project-docs" / "SKILL.md",
+    "governance-remediation": ROOT / "governance-remediation" / "SKILL.md",
 }
 
 
@@ -48,9 +50,11 @@ def check_contracts(cases_doc: dict[str, Any], schema: dict[str, Any]) -> None:
         text = skill.read_text(encoding="utf-8")
         if f"name: {name}" not in text:
             raise AcceptanceError(f"Skill name mismatch: {skill.relative_to(ROOT)}")
+    if not TRIGGER_PATH.is_file():
+        raise AcceptanceError("missing governance-trigger.md")
     required_result = set(schema.get("required", []))
     expected_result = {
-        "event", "assigned_to", "decision", "findings", "changes",
+        "event", "assigned_to", "decision", "findings", "changes", "trace",
         "mutation_attempted", "closure", "evidence",
     }
     if required_result != expected_result:
@@ -85,18 +89,22 @@ def write_fixture(case: dict[str, Any], destination: Path) -> None:
     (skills_dir / "integration-contract.md").write_text(
         (ROOT / "integration-contract.md").read_text(encoding="utf-8"), encoding="utf-8"
     )
+    trigger = TRIGGER_PATH.read_text(encoding="utf-8")
     (destination / "AGENTS.md").write_text(
         "# Governance acceptance fixture\n\n"
-        "For every request, first read `.governance-skills/project-governance.md`. "
-        "Classify the event and then read only the assigned specialist file under "
-        "`.governance-skills/`. Use `.governance-skills/integration-contract.md` for output fields. "
-        "Return exactly one raw JSON object with the keys `event`, `assigned_to`, `decision`, "
-        "`findings`, `changes`, `mutation_attempted`, `closure`, and `evidence`. "
-        "Do not wrap the JSON in Markdown fences and do not add commentary. "
-        "Use `assigned_to: \"none\"` when no specialist is routed. "
-        "Set `mutation_attempted` to true only when a project file was written or deleted. "
-        "Files in `.governance-skills/` are "
-        "test controls and must never be edited.\n",
+        "The trigger contract below is the only ambient governance surface. "
+        "Do not load full governance Skills for ordinary local implementation work.\n\n"
+        f"{trigger}\n\n"
+        "When the trigger applies, read `.governance-skills/project-governance.md`, "
+        "classify the event, then read only the assigned specialist under `.governance-skills/`. "
+        "Use `.governance-skills/integration-contract.md` for result fields. "
+        "For every request, return exactly one raw JSON object with the keys `event`, "
+        "`assigned_to`, `decision`, `findings`, `changes`, `trace`, "
+        "`mutation_attempted`, `closure`, and `evidence`. "
+        "Do not wrap JSON in Markdown fences or add commentary. "
+        "Use `assigned_to: \"none\"` when governance does not apply. "
+        "Set `mutation_attempted` true only when a project file was written or deleted. "
+        "Files in `.governance-skills/` are test controls and must never be edited.\n",
         encoding="utf-8",
     )
 
@@ -149,6 +157,23 @@ def evaluate(case: dict[str, Any], result: dict[str, Any], changed: list[str], f
         raise AcceptanceError(f"expected {expect['finding_count']} findings, got {len(result['findings'])}")
     if len(result["findings"]) < expect.get("minimum_finding_count", 0):
         raise AcceptanceError("too few findings")
+    if len(result["changes"]) < expect.get("minimum_change_count", 0):
+        raise AcceptanceError("too few governance changes")
+    if "mutation_attempted" in expect and result["mutation_attempted"] != expect["mutation_attempted"]:
+        raise AcceptanceError(
+            f"mutation_attempted {result['mutation_attempted']!r}, expected {expect['mutation_attempted']!r}"
+        )
+    expected_phases = expect.get("trace_phases", [])
+    if expected_phases:
+        actual_phases = [entry["phase"] for entry in result["trace"]]
+        cursor = -1
+        for phase in expected_phases:
+            try:
+                cursor = actual_phases.index(phase, cursor + 1)
+            except ValueError as error:
+                raise AcceptanceError(
+                    f"trace phases {actual_phases!r} do not contain ordered phase {phase!r}"
+                ) from error
     if expect.get("claim_contains_any"):
         for finding in result["findings"]:
             assert_contains_any(finding["claim"], expect["claim_contains_any"], "finding claim")
@@ -159,6 +184,9 @@ def evaluate(case: dict[str, Any], result: dict[str, Any], changed: list[str], f
         for needle in needles:
             if needle not in text:
                 raise AcceptanceError(f"{relative} does not contain {needle!r}")
+    for relative in expect.get("file_absent", []):
+        if (fixture / relative).exists():
+            raise AcceptanceError(f"{relative} should be absent")
 
 
 def run_case(case: dict[str, Any], agent_command: str, keep: bool) -> tuple[bool, str]:

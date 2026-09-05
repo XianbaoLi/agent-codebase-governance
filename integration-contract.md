@@ -34,6 +34,20 @@ Finding 不能因为“复杂”“重复”“不优雅”而产生；必须与
 
 长期知识同步统一交给 `govern-project-docs`。
 
+## Lifecycle Trace
+
+完整治理闭环可以输出一个临时 `trace`，用于验收本次执行是否真的经过所需阶段。它不是长期 workflow registry，不写入项目事实数据库。
+
+每个 trace entry：
+
+```text
+phase: TRIGGER | SHOULD | EXECUTION | DID_IT | REMEDIATION | KNOWLEDGE_SYNC | CLOSURE
+assigned_to: <skill | agent | none>
+outcome: <本阶段结果摘要>
+```
+
+单阶段治理请求可以只记录实际经过的阶段；完整生命周期验收则按实际顺序记录。Trace 在本轮结束后即可丢弃。
+
 ## Remediation Decision
 
 `governance-remediation` 对一个明确治理候选输出：

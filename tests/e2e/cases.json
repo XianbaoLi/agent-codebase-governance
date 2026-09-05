@@ -4,33 +4,63 @@
     {
       "id": "no-governance-local-helper",
       "sandbox": "read-only",
-      "prompt": "Rename the private helper parse_value to parse_config_value. First decide whether project governance applies; do not make the edit.",
+      "prompt": "Rename the private helper parse_value to parse_config_value. Do not make the edit yet.",
       "files": {
         "src/parser.py": "def parse_value(raw):\n    return raw.strip()\n"
       },
       "expect": {
-        "event": ["NO_GOVERNANCE"],
-        "assigned_to": ["none", "NO_GOVERNANCE"],
-        "decision_contains_any": ["NO_GOVERNANCE"],
-        "closure_prefix": ["CLOSED"],
+        "event": [
+          "NO_GOVERNANCE"
+        ],
+        "assigned_to": [
+          "none",
+          "NO_GOVERNANCE"
+        ],
+        "decision_contains_any": [
+          "NO_GOVERNANCE"
+        ],
+        "closure_prefix": [
+          "CLOSED"
+        ],
         "finding_count": 0,
-        "changed_paths": []
+        "changed_paths": [],
+        "trace_phases": [
+          "TRIGGER",
+          "CLOSURE"
+        ],
+        "mutation_attempted": false
       }
     },
     {
       "id": "e1-duplicate-state-owner",
       "sandbox": "read-only",
-      "prompt": "Add a persistent SessionSnapshot in billing with the same order-session fields. Decide whether this long-term project change should happen and what boundary applies; do not implement it yet.",
+      "prompt": "Add a persistent SessionSnapshot in billing with the same order-session fields. Do not implement it yet.",
       "files": {
         "docs/current/state.md": "---\nstatus: active\nauthority: canonical\n---\nSessionStore is the only owner of order session state.\n",
         "src/session_store.py": "class SessionStore:\n    pass\n"
       },
       "expect": {
-        "event": ["E1"],
-        "assigned_to": ["architecture-governance"],
-        "decision_contains_any": ["RECONSIDER", "ALLOW_WITH_CONDITIONS", "UNRESOLVED"],
-        "closure_prefix": ["OPEN", "CLOSED"],
-        "changed_paths": []
+        "event": [
+          "E1"
+        ],
+        "assigned_to": [
+          "architecture-governance"
+        ],
+        "decision_contains_any": [
+          "RECONSIDER",
+          "ALLOW_WITH_CONDITIONS",
+          "UNRESOLVED"
+        ],
+        "closure_prefix": [
+          "OPEN",
+          "CLOSED"
+        ],
+        "changed_paths": [],
+        "trace_phases": [
+          "TRIGGER",
+          "SHOULD"
+        ],
+        "mutation_attempted": false
       }
     },
     {
@@ -42,13 +72,38 @@
         "docs/current/runtime.md": "---\nstatus: active\nauthority: canonical\n---\nThe runtime default is `permissive`. Machine authority: `config/runtime.toml`.\n"
       },
       "expect": {
-        "event": ["E2", "E5"],
-        "assigned_to": ["govern-project-docs"],
-        "decision_contains_any": ["UPDATED", "SYNC", "CLOSED", "strict"],
-        "closure_prefix": ["CLOSED"],
+        "event": [
+          "E2",
+          "E5"
+        ],
+        "assigned_to": [
+          "govern-project-docs"
+        ],
+        "decision_contains_any": [
+          "UPDATED",
+          "SYNC",
+          "CLOSED",
+          "strict"
+        ],
+        "closure_prefix": [
+          "CLOSED"
+        ],
         "finding_count": 0,
-        "changed_paths": ["docs/current/runtime.md"],
-        "file_contains": {"docs/current/runtime.md": ["strict"]}
+        "changed_paths": [
+          "docs/current/runtime.md"
+        ],
+        "file_contains": {
+          "docs/current/runtime.md": [
+            "strict"
+          ]
+        },
+        "trace_phases": [
+          "TRIGGER",
+          "KNOWLEDGE_SYNC",
+          "CLOSURE"
+        ],
+        "mutation_attempted": true,
+        "minimum_change_count": 1
       }
     },
     {
@@ -62,13 +117,36 @@
         "docs/decisions/ADR-003.md": "---\nstatus: superseded\n---\nOrderLegacyAdapter was introduced for the v1 compatibility path.\n"
       },
       "expect": {
-        "event": ["E3"],
-        "assigned_to": ["complexity-audit"],
-        "decision_contains_any": ["FINDING", "AUDIT", "DRIFT", "RESIDUE"],
-        "closure_prefix": ["CLOSED", "OPEN"],
+        "event": [
+          "E3"
+        ],
+        "assigned_to": [
+          "complexity-audit"
+        ],
+        "decision_contains_any": [
+          "FINDING",
+          "AUDIT",
+          "DRIFT",
+          "RESIDUE"
+        ],
+        "closure_prefix": [
+          "CLOSED",
+          "OPEN"
+        ],
         "minimum_finding_count": 1,
-        "claim_contains_any": ["may", "might", "可能", "疑似", "值得"],
-        "changed_paths": []
+        "claim_contains_any": [
+          "may",
+          "might",
+          "可能",
+          "疑似",
+          "值得"
+        ],
+        "changed_paths": [],
+        "trace_phases": [
+          "TRIGGER",
+          "DID_IT"
+        ],
+        "mutation_attempted": false
       }
     },
     {
@@ -82,11 +160,26 @@
         "docs/decisions/ADR-003.md": "---\nstatus: superseded\n---\nOrderLegacyAdapter was introduced for the v1 compatibility path.\n"
       },
       "expect": {
-        "event": ["E4"],
-        "assigned_to": ["governance-remediation"],
-        "decision_contains_any": ["RETAIN", "UNRESOLVED"],
-        "closure_prefix": ["CLOSED", "OPEN"],
-        "changed_paths": []
+        "event": [
+          "E4"
+        ],
+        "assigned_to": [
+          "governance-remediation"
+        ],
+        "decision_contains_any": [
+          "RETAIN",
+          "UNRESOLVED"
+        ],
+        "closure_prefix": [
+          "CLOSED",
+          "OPEN"
+        ],
+        "changed_paths": [],
+        "trace_phases": [
+          "TRIGGER",
+          "REMEDIATION"
+        ],
+        "mutation_attempted": false
       }
     },
     {
@@ -99,28 +192,124 @@
         "schema.sql": "CREATE TABLE orders(status text);\nCREATE TABLE order_state(status text);\n"
       },
       "expect": {
-        "event": ["E5"],
-        "assigned_to": ["govern-project-docs"],
-        "decision_contains_any": ["UNRESOLVED"],
-        "closure_prefix": ["OPEN"],
+        "event": [
+          "E5"
+        ],
+        "assigned_to": [
+          "govern-project-docs"
+        ],
+        "decision_contains_any": [
+          "UNRESOLVED"
+        ],
+        "closure_prefix": [
+          "OPEN"
+        ],
         "finding_count": 0,
-        "changed_paths": []
+        "changed_paths": [],
+        "trace_phases": [
+          "TRIGGER",
+          "KNOWLEDGE_SYNC"
+        ],
+        "mutation_attempted": false
+      }
+    },
+    {
+      "id": "lifecycle-e1-to-closure",
+      "sandbox": "workspace-write",
+      "prompt": "Carry out the approved staged SessionStore migration described by the canonical ADR. Follow the governance lifecycle from ambient trigger through SHOULD, implementation, DID_IT audit, remediation, authority/document sync, and final Closure. The ADR requires you to migrate the consumer first while the legacy owner still exists, audit that intermediate state, then remove the legacy owner only after proving it has no remaining consumer. Keep the public load_session behavior unchanged.",
+      "files": {
+        "docs/decisions/ADR-010.md": "---\nstatus: active\nauthority: canonical\n---\nThe SessionStore migration is approved. Target owner: `src/session_store.py::SessionStore`. `SessionStore` becomes the sole session-state owner. Preserve the public `load_session` behavior. Use a staged migration: create SessionStore and move consumers first; perform DID_IT governance audit while LegacySessionStore still exists; if it has no remaining consumer or contract/state duty, retire/remove it; then update active state documentation and close governance.\n",
+        "docs/current/state.md": "---\nstatus: active\nauthority: canonical\n---\nLegacySessionStore is the current and only owner of session state.\n",
+        "src/legacy_session_store.py": "class LegacySessionStore:\n    def load_session(self, session_id):\n        return {\"id\": session_id}\n",
+        "src/service.py": "from legacy_session_store import LegacySessionStore\n\n\ndef load_session(session_id):\n    return LegacySessionStore().load_session(session_id)\n"
+      },
+      "expect": {
+        "event": [
+          "E1"
+        ],
+        "assigned_to": [
+          "project-governance"
+        ],
+        "decision_contains_any": [
+          "ALLOW",
+          "CLOSED",
+          "migration"
+        ],
+        "closure_prefix": [
+          "CLOSED"
+        ],
+        "minimum_finding_count": 1,
+        "minimum_change_count": 2,
+        "claim_contains_any": [
+          "may",
+          "might",
+          "可能",
+          "疑似",
+          "obsolete",
+          "residue"
+        ],
+        "trace_phases": [
+          "TRIGGER",
+          "SHOULD",
+          "EXECUTION",
+          "DID_IT",
+          "REMEDIATION",
+          "KNOWLEDGE_SYNC",
+          "CLOSURE"
+        ],
+        "mutation_attempted": true,
+        "changed_paths": [
+          "docs/current/state.md",
+          "src/legacy_session_store.py",
+          "src/service.py",
+          "src/session_store.py"
+        ],
+        "file_contains": {
+          "docs/current/state.md": [
+            "SessionStore"
+          ],
+          "src/service.py": [
+            "session_store",
+            "SessionStore"
+          ],
+          "src/session_store.py": [
+            "SessionStore",
+            "load_session"
+          ]
+        },
+        "file_absent": [
+          "src/legacy_session_store.py"
+        ]
       }
     },
     {
       "id": "boundary-generic-code-quality-is-out-of-scope",
       "sandbox": "read-only",
-      "prompt": "Review this function for clean-code style, naming and possible refactoring. There is no architecture, contract, authority or long-term project change involved. First decide whether project governance applies.",
+      "prompt": "Review this function for clean-code style, naming and possible refactoring. There is no architecture, contract, authority or long-term project change involved.",
       "files": {
         "src/math_utils.py": "def f(a,b):\n    return a+b\n"
       },
       "expect": {
-        "event": ["NO_GOVERNANCE"],
-        "assigned_to": ["none", "NO_GOVERNANCE"],
-        "decision_contains_any": ["NO_GOVERNANCE"],
-        "closure_prefix": ["CLOSED"],
+        "event": [
+          "NO_GOVERNANCE"
+        ],
+        "assigned_to": [
+          "none",
+          "NO_GOVERNANCE"
+        ],
+        "decision_contains_any": [
+          "NO_GOVERNANCE"
+        ],
+        "closure_prefix": [
+          "CLOSED"
+        ],
         "finding_count": 0,
-        "changed_paths": []
+        "changed_paths": [],
+        "trace_phases": [
+          "TRIGGER",
+          "CLOSURE"
+        ],
+        "mutation_attempted": false
       }
     }
   ]

@@ -12,7 +12,9 @@ description: 识别并路由具有长期项目演化影响的治理事件，协�
 
 ## Trigger
 
-先判断任务是否会改变长期项目状态。普通 helper、局部算法替换、变量重命名、常规测试补充、无长期影响的局部重构等返回 `NO_GOVERNANCE`。
+`governance-trigger.md` 是面向普通 Agent 的轻量常驻触发面。本 Skill 不应对每个普通编码请求无条件加载；只有触发面命中长期项目演化信号后才进入这里。
+
+进入后，先判断任务是否会改变长期项目状态。普通 helper、局部算法替换、变量重命名、常规测试补充、无长期影响的局部重构等返回 `NO_GOVERNANCE`。
 
 需要治理的典型信号：
 
@@ -79,5 +81,6 @@ assigned_to: <skill | agent | none>
 constraints: <0..N>
 findings: <0..N ephemeral Governance Finding>
 changes: <0..N ephemeral Governance Change>
+trace: <0..N ephemeral lifecycle phase records>
 closure: CLOSED | OPEN(...)
 ```

@@ -8,13 +8,21 @@
     "decision",
     "findings",
     "changes",
+    "trace",
     "mutation_attempted",
     "closure",
     "evidence"
   ],
   "properties": {
     "event": {
-      "enum": ["E1", "E2", "E3", "E4", "E5", "NO_GOVERNANCE"]
+      "enum": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "NO_GOVERNANCE"
+      ]
     },
     "assigned_to": {
       "type": "string"
@@ -27,26 +35,123 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["type", "scope", "claim", "evidence", "confidence"],
+        "required": [
+          "type",
+          "scope",
+          "expected",
+          "observed",
+          "claim",
+          "evidence",
+          "confidence"
+        ],
         "properties": {
-          "type": {"type": "string"},
-          "scope": {"type": "string"},
-          "claim": {"type": "string"},
-          "evidence": {"type": "string"},
-          "confidence": {"enum": ["low", "medium", "high"]}
+          "type": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "expected": {
+            "type": "string"
+          },
+          "observed": {
+            "type": "string"
+          },
+          "claim": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "confidence": {
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "next_validation": {
+            "type": "string"
+          }
         }
       }
     },
     "changes": {
       "type": "array",
-      "items": {"type": "string"}
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "scope",
+          "change",
+          "reason",
+          "authority_impact"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "change": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "authority_impact": {
+            "type": "string"
+          },
+          "verification": {
+            "type": "string"
+          }
+        }
+      }
     },
-    "mutation_attempted": {"type": "boolean"},
-    "closure": {"type": "string"},
+    "trace": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "phase",
+          "assigned_to",
+          "outcome"
+        ],
+        "properties": {
+          "phase": {
+            "enum": [
+              "TRIGGER",
+              "SHOULD",
+              "EXECUTION",
+              "DID_IT",
+              "REMEDIATION",
+              "KNOWLEDGE_SYNC",
+              "CLOSURE"
+            ]
+          },
+          "assigned_to": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "mutation_attempted": {
+      "type": "boolean"
+    },
+    "closure": {
+      "type": "string"
+    },
     "evidence": {
       "type": "array",
-      "items": {"type": "string"}
+      "items": {
+        "type": "string"
+      }
     }
   }
 }
-
