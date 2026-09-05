@@ -14,7 +14,8 @@
 ## 核心闭环
 
 ```text
-Trigger
+Ambient Trigger (admission only)
+  -> Project Governance (routing/orchestration)
   -> Context / Authority
   -> SHOULD (decision + constraints)
   -> Agent executes HOW
@@ -24,13 +25,15 @@ Trigger
   -> Closure
 ```
 
-治理是例外路径。没有长期项目影响的普通工程任务返回 `NO_GOVERNANCE`。
+治理是例外路径。`governance-trigger.md` 先输出 `NO_GOVERNANCE` 或 `GOVERNANCE_REQUIRED`；只有后者进入 `project-governance` 做 E1–E5 分类。没有长期项目影响的普通工程任务不会加载治理 Router 或 specialist Skills。
 
-## 五个治理能力
+## 入口与五个治理能力
+
+`governance-trigger.md` 是平台适配/上下文层面的轻量入口，只回答“进不进入治理系统”，不属于五个 specialist/orchestration 能力之一。
 
 | 能力 | 只回答 |
 | --- | --- |
-| `project-governance` | 这是不是治理事件、应该路由到哪里、最终是否闭合？ |
+| `project-governance` | 已确认需要治理后，这是哪类事件、应该路由到哪里、跨阶段如何协调、最终是否闭合？ |
 | `architecture-governance` | 这个长期项目变化该不该发生，边界是什么？ |
 | `govern-project-docs` | 当前哪些项目知识仍具有 authority，Agent 应该相信什么？ |
 | `complexity-audit` | 当前项目是否存在与有效决策不一致的治理偏离或失效残留？ |

@@ -40,8 +40,8 @@ def load_json(path: Path) -> Any:
 
 
 def check_contracts(cases_doc: dict[str, Any], schema: dict[str, Any]) -> None:
-    if cases_doc.get("version") != 1:
-        raise AcceptanceError("cases.json version must be 1")
+    if cases_doc.get("version") != 2:
+        raise AcceptanceError("cases.json version must be 2")
     case_ids: set[str] = set()
     valid_sandboxes = {"read-only", "workspace-write"}
     for name, skill in SPECIALISTS.items():
@@ -54,7 +54,7 @@ def check_contracts(cases_doc: dict[str, Any], schema: dict[str, Any]) -> None:
         raise AcceptanceError("missing governance-trigger.md")
     required_result = set(schema.get("required", []))
     expected_result = {
-        "event", "assigned_to", "decision", "findings", "changes", "trace",
+        "admission", "event", "assigned_to", "decision", "findings", "changes", "trace",
         "mutation_attempted", "closure", "evidence",
     }
     if required_result != expected_result:
@@ -68,12 +68,29 @@ def check_contracts(cases_doc: dict[str, Any], schema: dict[str, Any]) -> None:
             raise AcceptanceError(f"invalid sandbox in {case_id}")
         if not case.get("prompt") or not isinstance(case.get("files"), dict):
             raise AcceptanceError(f"invalid prompt/files in {case_id}")
-        if not case.get("expect", {}).get("event"):
+        if not case.get("expect", {}).get("admission"):
+            raise AcceptanceError(f"missing expected admission in {case_id}")
+        if "event" not in case.get("expect", {}):
             raise AcceptanceError(f"missing expected event in {case_id}")
-    required_events = {"NO_GOVERNANCE", "E1", "E2", "E3", "E4", "E5"}
-    covered = {event for case in cases_doc["cases"] for event in case["expect"]["event"]}
-    if not required_events.issubset(covered):
-        raise AcceptanceError(f"missing event coverage: {sorted(required_events - covered)}")
+    required_admissions = {"NO_GOVERNANCE", "GOVERNANCE_REQUIRED"}
+    covered_admissions = {
+        admission
+        for case in cases_doc["cases"]
+        for admission in case["expect"]["admission"]
+    }
+    if not required_admissions.issubset(covered_admissions):
+        raise AcceptanceError(
+            f"missing admission coverage: {sorted(required_admissions - covered_admissions)}"
+        )
+    required_events = {"E1", "E2", "E3", "E4", "E5"}
+    covered_events = {
+        event
+        for case in cases_doc["cases"]
+        for event in case["expect"]["event"]
+        if event is not None
+    }
+    if not required_events.issubset(covered_events):
+        raise AcceptanceError(f"missing event coverage: {sorted(required_events - covered_events)}")
 
 
 def write_fixture(case: dict[str, Any], destination: Path) -> None:
@@ -81,24 +98,27 @@ def write_fixture(case: dict[str, Any], destination: Path) -> None:
         path = destination / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
-    skills_dir = destination / ".governance-skills"
-    skills_dir.mkdir()
-    for name, source in SPECIALISTS.items():
-        target = skills_dir / f"{name}.md"
-        target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
-    (skills_dir / "integration-contract.md").write_text(
-        (ROOT / "integration-contract.md").read_text(encoding="utf-8"), encoding="utf-8"
-    )
+    governance_required = "GOVERNANCE_REQUIRED" in case["expect"]["admission"]
+    if governance_required:
+        skills_dir = destination / ".governance-skills"
+        skills_dir.mkdir()
+        for name, source in SPECIALISTS.items():
+            target = skills_dir / f"{name}.md"
+            target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+        (skills_dir / "integration-contract.md").write_text(
+            (ROOT / "integration-contract.md").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
     trigger = TRIGGER_PATH.read_text(encoding="utf-8")
     (destination / "AGENTS.md").write_text(
         "# Governance acceptance fixture\n\n"
-        "The trigger contract below is the only ambient governance surface. "
-        "Do not load full governance Skills for ordinary local implementation work.\n\n"
+        "The trigger contract below is the only ambient governance admission surface. "
+        "It returns only NO_GOVERNANCE or GOVERNANCE_REQUIRED.\n\n"
         f"{trigger}\n\n"
-        "When the trigger applies, read `.governance-skills/project-governance.md`, "
-        "classify the event, then read only the assigned specialist under `.governance-skills/`. "
-        "Use `.governance-skills/integration-contract.md` for result fields. "
-        "For every request, return exactly one raw JSON object with the keys `event`, "
+        "On NO_GOVERNANCE, do not load governance Skills. On GOVERNANCE_REQUIRED, "
+        "read `.governance-skills/project-governance.md`; it classifies E1-E5, then read only "
+        "the assigned specialist under `.governance-skills/`. Use the integration contract for result fields. "
+        "For every request, return exactly one raw JSON object with the keys `admission`, `event`, "
         "`assigned_to`, `decision`, `findings`, `changes`, `trace`, "
         "`mutation_attempted`, `closure`, and `evidence`. "
         "Do not wrap JSON in Markdown fences or add commentary. "
@@ -146,8 +166,16 @@ def assert_contains_any(actual: str, candidates: list[str], label: str) -> None:
 
 def evaluate(case: dict[str, Any], result: dict[str, Any], changed: list[str], fixture: Path) -> None:
     expect = case["expect"]
+    if result["admission"] not in expect["admission"]:
+        raise AcceptanceError(
+            f"admission {result['admission']!r} not in {expect['admission']!r}"
+        )
     if result["event"] not in expect["event"]:
         raise AcceptanceError(f"event {result['event']!r} not in {expect['event']!r}")
+    if result["admission"] == "NO_GOVERNANCE" and result["event"] is not None:
+        raise AcceptanceError("NO_GOVERNANCE admission requires event=null")
+    if result["admission"] == "GOVERNANCE_REQUIRED" and result["event"] is None:
+        raise AcceptanceError("GOVERNANCE_REQUIRED admission requires E1-E5 event")
     if result["assigned_to"] not in expect["assigned_to"]:
         raise AcceptanceError(f"assigned_to {result['assigned_to']!r} not in {expect['assigned_to']!r}")
     assert_contains_any(result["decision"], expect["decision_contains_any"], "decision")

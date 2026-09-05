@@ -2,6 +2,27 @@
 
 跨 Skill 对象保持轻量，并且默认都是 ephemeral artifact。它们服务于一次项目演化治理闭环，不建立长期 findings database。
 
+## Admission Decision
+
+Ambient `governance-trigger.md` 只产生 admission decision：
+
+```text
+NO_GOVERNANCE
+GOVERNANCE_REQUIRED
+```
+
+- `NO_GOVERNANCE`：结束治理路径，普通 Agent 继续执行任务；此时没有 E1–E5 event。
+- `GOVERNANCE_REQUIRED`：交给 `project-governance` 做 event classification 和 routing。
+
+因此 `admission` 与 `event` 是两个字段：
+
+```text
+admission: NO_GOVERNANCE | GOVERNANCE_REQUIRED
+event: null | E1 | E2 | E3 | E4 | E5
+```
+
+`event = null` 只允许与 `admission = NO_GOVERNANCE` 同时出现；E1–E5 只允许与 `GOVERNANCE_REQUIRED` 同时出现。
+
 ## Governance Finding
 
 用途：描述“项目可能已经偏离当前有效决策”的可证伪假设。
@@ -41,7 +62,7 @@ Finding 不能因为“复杂”“重复”“不优雅”而产生；必须与
 每个 trace entry：
 
 ```text
-phase: TRIGGER | SHOULD | EXECUTION | DID_IT | REMEDIATION | KNOWLEDGE_SYNC | CLOSURE
+phase: TRIGGER | ROUTING | SHOULD | EXECUTION | DID_IT | REMEDIATION | KNOWLEDGE_SYNC | CLOSURE
 assigned_to: <skill | agent | none>
 outcome: <本阶段结果摘要>
 ```
@@ -83,7 +104,8 @@ verification:
 ## 协同流
 
 ```text
-project-governance (Trigger)
+governance-trigger (Admission)
+  -> project-governance (Routing / Orchestration)
   -> Context / Authority
   -> architecture-governance (SHOULD, when needed)
   -> Agent executes HOW

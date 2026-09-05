@@ -1,10 +1,23 @@
 # Governance Trigger Contract
 
-This is the lightweight ambient trigger surface for Agent Codebase Governance. It is meant to be visible from a target repository's `AGENTS.md` (or equivalent agent instructions) without loading every governance Skill.
+This is the lightweight ambient admission gate for Agent Codebase Governance. It is meant to be visible from a target repository's `AGENTS.md` (or equivalent agent instructions) without loading the governance router or specialist Skills.
 
-## Fast path: stay out
+It answers exactly one question:
 
-Return `NO_GOVERNANCE` and do not load specialist governance Skills when the task is limited to local implementation detail, such as:
+> Does this request plausibly affect long-lived project evolution?
+
+## Output
+
+Return exactly one admission decision:
+
+- `NO_GOVERNANCE`: the task is ordinary local implementation work. Continue normally and do not load `project-governance`.
+- `GOVERNANCE_REQUIRED`: the task plausibly affects long-lived project evolution. Hand off to `project-governance/SKILL.md`.
+
+This trigger does **not** classify E1–E5, choose a specialist, decide SHOULD, audit the project, remediate artifacts, or perform Closure.
+
+## NO_GOVERNANCE fast path
+
+Use `NO_GOVERNANCE` when the task is limited to local implementation detail, such as:
 
 - a private helper or variable rename;
 - a local algorithm replacement;
@@ -12,9 +25,9 @@ Return `NO_GOVERNANCE` and do not load specialist governance Skills when the tas
 - formatting, lint, naming, or generic Clean Code review;
 - a local refactor that does not change long-lived architecture, state ownership, contract, compatibility, authority, or Agent context.
 
-## Trigger governance
+## GOVERNANCE_REQUIRED signals
 
-Load `project-governance/SKILL.md` before making project mutations when the request or repository evidence plausibly involves any of these:
+Use `GOVERNANCE_REQUIRED` when the request or repository evidence plausibly involves any of these:
 
 - a new or changed long-lived architecture/module boundary;
 - new state ownership, persistence, migration responsibility, or durable state;
@@ -24,11 +37,12 @@ Load `project-governance/SKILL.md` before making project mutations when the requ
 - superseded or abandoned decisions that may still leave executable artifacts or active context;
 - a governance change that still needs DID_IT verification, remediation, knowledge sync, or Closure.
 
-If one of these signals is plausible but facts are incomplete, load `project-governance` and let it classify the event. Do not guess a specialist directly.
+If a long-lived governance signal is plausible but facts are incomplete, prefer `GOVERNANCE_REQUIRED`; classification uncertainty belongs to the router, not the admission gate.
 
-## Loading rule
+## Handoff rule
 
-1. Keep this trigger surface lightweight and ambient.
-2. Only after it triggers, read `project-governance/SKILL.md`.
-3. Then read only the routed specialist Skill.
-4. Governance controls project evolution, not ordinary coding HOW.
+1. Keep this admission gate lightweight and ambient.
+2. On `NO_GOVERNANCE`, do not load governance Skills.
+3. On `GOVERNANCE_REQUIRED`, load `project-governance/SKILL.md`.
+4. Let `project-governance` classify E1–E5 and route the required specialist.
+5. Governance controls project evolution, not ordinary coding HOW.

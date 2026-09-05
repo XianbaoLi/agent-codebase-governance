@@ -46,7 +46,8 @@ Proposed Change
 
 | 组件 | 回答的问题 | 角色 |
 | --- | --- | --- |
-| `project-governance` | 这是不是治理事件，下一步由谁处理，最后是否收敛 | Trigger / Router / Closure |
+| `governance-trigger.md` | 这次任务是否需要进入治理系统 | Ambient Admission Gate |
+| `project-governance` | 已进入治理后，这是 E1–E5 哪类事件、下一步由谁处理、最终是否收敛 | Router / Orchestrator / Closure |
 | `architecture-governance` | 这个长期变化该不该发生，允许到什么边界 | SHOULD |
 | `govern-project-docs` | 当前哪些长期知识仍然有效，Agent 应该相信什么 | Context / Authority |
 | `complexity-audit` | 项目是否出现治理漂移、失效决策残留或上下文污染 | DID IT / Audit |
@@ -67,13 +68,19 @@ Proposed Change
 
 ## 真实触发入口
 
-`governance-trigger.md` 是应暴露给普通 Agent 的最小常驻触发面。它只判断“这次任务是否可能影响长期项目演化”。
+`governance-trigger.md` 是应暴露给普通 Agent 的最小常驻 admission gate。它只做二分类：
 
-- 普通 helper、命名、局部算法、一般测试/重构直接走 `NO_GOVERNANCE`；
-- 命中长期架构、state、contract、authority、compatibility、context drift 等信号后，才加载 `project-governance`；
-- `project-governance` 再路由到唯一需要的 specialist Skill。
+```text
+NO_GOVERNANCE
+GOVERNANCE_REQUIRED
+```
 
-因此不是“所有请求先跑一遍完整 Governance”，而是“轻量 Trigger 常驻，完整治理按需加载”。
+- 普通 helper、命名、局部算法、一般测试/重构直接走 `NO_GOVERNANCE`，不加载治理 Skills；
+- 命中长期架构、state、contract、authority、compatibility、context drift 等信号后输出 `GOVERNANCE_REQUIRED`；
+- 只有此时才加载 `project-governance`；
+- `project-governance` 不再重复 YES/NO 判断，只负责 E1–E5 分类、路由、跨阶段协调和 Closure。
+
+因此职责是“Trigger 决定进不进，Router 决定进来后去哪”。
 
 ## 事件路由
 
@@ -99,6 +106,8 @@ Proposed Change
 删除也保留，但只删除**有治理证据证明应退役的 artifact**。删除前必须检查 consumer、contract、运行时使用、历史原因和回滚影响。
 
 ## 典型工作流
+
+所有治理工作流先经过 `governance-trigger -> GOVERNANCE_REQUIRED -> project-governance`。
 
 1. **新增变化**：`E1 -> architecture-governance -> Agent execution -> complexity-audit/closure`。
 2. **知识变化**：`E2/E5 -> govern-project-docs` 确定 authority，并隔离 superseded context。

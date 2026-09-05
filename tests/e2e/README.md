@@ -1,6 +1,6 @@
 # Codex end-to-end acceptance
 
-This suite tests governance behavior as a black box. It creates isolated synthetic repositories, exposes only the lightweight ambient trigger through `AGENTS.md`, gives each request to `codex exec`, constrains the final response with a JSON Schema, and checks both the response and the actual filesystem diff.
+This suite tests governance behavior as a black box. It creates isolated synthetic repositories, exposes the lightweight ambient admission gate through `AGENTS.md`, gives each request to `codex exec`, constrains the final response with a JSON Schema, and checks both the response and the actual filesystem diff. `NO_GOVERNANCE` fixtures intentionally omit the router and specialist Skills, so the fast path cannot depend on a second governance classification pass.
 
 Run deterministic contract checks:
 
@@ -26,4 +26,4 @@ Run one case and preserve a failed fixture for inspection:
 python tests/e2e/run_e2e.py --case e5-conflicting-active-authorities --keep-failed
 ```
 
-The suite covers `NO_GOVERNANCE` and events E1 through E5, plus `lifecycle-e1-to-closure`, which must show the ordered trace `TRIGGER -> SHOULD -> EXECUTION -> DID_IT -> REMEDIATION -> KNOWLEDGE_SYNC -> CLOSURE` and the expected final filesystem state. Read-only cases must leave no project-file diff. Model-dependent runs are acceptance evidence, not deterministic unit tests; do not place them on every commit until their variance and cost are understood.
+The suite covers both admission decisions plus events E1 through E5, plus `lifecycle-e1-to-closure`, which must show the ordered trace `TRIGGER -> ROUTING -> SHOULD -> EXECUTION -> DID_IT -> REMEDIATION -> KNOWLEDGE_SYNC -> CLOSURE` and the expected final filesystem state. Read-only cases must leave no project-file diff. Model-dependent runs are acceptance evidence, not deterministic unit tests; do not place them on every commit until their variance and cost are understood.

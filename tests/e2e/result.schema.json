@@ -3,6 +3,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "admission",
     "event",
     "assigned_to",
     "decision",
@@ -16,12 +17,12 @@
   "properties": {
     "event": {
       "enum": [
+        null,
         "E1",
         "E2",
         "E3",
         "E4",
-        "E5",
-        "NO_GOVERNANCE"
+        "E5"
       ]
     },
     "assigned_to": {
@@ -124,6 +125,7 @@
           "phase": {
             "enum": [
               "TRIGGER",
+              "ROUTING",
               "SHOULD",
               "EXECUTION",
               "DID_IT",
@@ -152,6 +154,12 @@
       "items": {
         "type": "string"
       }
+    },
+    "admission": {
+      "enum": [
+        "NO_GOVERNANCE",
+        "GOVERNANCE_REQUIRED"
+      ]
     }
   }
 }

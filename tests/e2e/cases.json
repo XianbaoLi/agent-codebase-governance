@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "cases": [
     {
       "id": "no-governance-local-helper",
@@ -10,7 +10,7 @@
       },
       "expect": {
         "event": [
-          "NO_GOVERNANCE"
+          null
         ],
         "assigned_to": [
           "none",
@@ -28,7 +28,10 @@
           "TRIGGER",
           "CLOSURE"
         ],
-        "mutation_attempted": false
+        "mutation_attempted": false,
+        "admission": [
+          "NO_GOVERNANCE"
+        ]
       }
     },
     {
@@ -58,9 +61,13 @@
         "changed_paths": [],
         "trace_phases": [
           "TRIGGER",
+          "ROUTING",
           "SHOULD"
         ],
-        "mutation_attempted": false
+        "mutation_attempted": false,
+        "admission": [
+          "GOVERNANCE_REQUIRED"
+        ]
       }
     },
     {
@@ -99,11 +106,15 @@
         },
         "trace_phases": [
           "TRIGGER",
+          "ROUTING",
           "KNOWLEDGE_SYNC",
           "CLOSURE"
         ],
         "mutation_attempted": true,
-        "minimum_change_count": 1
+        "minimum_change_count": 1,
+        "admission": [
+          "GOVERNANCE_REQUIRED"
+        ]
       }
     },
     {
@@ -144,9 +155,13 @@
         "changed_paths": [],
         "trace_phases": [
           "TRIGGER",
+          "ROUTING",
           "DID_IT"
         ],
-        "mutation_attempted": false
+        "mutation_attempted": false,
+        "admission": [
+          "GOVERNANCE_REQUIRED"
+        ]
       }
     },
     {
@@ -177,9 +192,13 @@
         "changed_paths": [],
         "trace_phases": [
           "TRIGGER",
+          "ROUTING",
           "REMEDIATION"
         ],
-        "mutation_attempted": false
+        "mutation_attempted": false,
+        "admission": [
+          "GOVERNANCE_REQUIRED"
+        ]
       }
     },
     {
@@ -208,9 +227,13 @@
         "changed_paths": [],
         "trace_phases": [
           "TRIGGER",
+          "ROUTING",
           "KNOWLEDGE_SYNC"
         ],
-        "mutation_attempted": false
+        "mutation_attempted": false,
+        "admission": [
+          "GOVERNANCE_REQUIRED"
+        ]
       }
     },
     {
@@ -250,6 +273,7 @@
         ],
         "trace_phases": [
           "TRIGGER",
+          "ROUTING",
           "SHOULD",
           "EXECUTION",
           "DID_IT",
@@ -279,6 +303,9 @@
         },
         "file_absent": [
           "src/legacy_session_store.py"
+        ],
+        "admission": [
+          "GOVERNANCE_REQUIRED"
         ]
       }
     },
@@ -291,7 +318,7 @@
       },
       "expect": {
         "event": [
-          "NO_GOVERNANCE"
+          null
         ],
         "assigned_to": [
           "none",
@@ -309,7 +336,10 @@
           "TRIGGER",
           "CLOSURE"
         ],
-        "mutation_attempted": false
+        "mutation_attempted": false,
+        "admission": [
+          "NO_GOVERNANCE"
+        ]
       }
     }
   ]

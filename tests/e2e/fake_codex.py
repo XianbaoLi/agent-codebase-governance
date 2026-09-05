@@ -78,13 +78,15 @@ if "docs/decisions/ADR-010.md" in fixture_files:
         },
     ]
     result = {
+        "admission": "GOVERNANCE_REQUIRED",
         "event": "E1",
         "assigned_to": "project-governance",
         "decision": "ALLOW_WITH_CONDITIONS; staged migration completed and CLOSED",
         "findings": findings,
         "changes": changes,
         "trace": trace(
-            ("TRIGGER", "project-governance", "E1 structural change detected"),
+            ("TRIGGER", "governance-trigger", "GOVERNANCE_REQUIRED"),
+            ("ROUTING", "project-governance", "E1 structural change detected"),
             ("SHOULD", "architecture-governance", "ALLOW_WITH_CONDITIONS under ADR-010"),
             ("EXECUTION", "agent", "Created SessionStore and migrated the consumer"),
             ("DID_IT", "complexity-audit", "Found the legacy owner as possible obsolete residue"),
@@ -103,6 +105,7 @@ elif "config/runtime.toml" in fixture_files:
         encoding="utf-8",
     )
     result = {
+        "admission": "GOVERNANCE_REQUIRED",
         "event": "E2",
         "assigned_to": "govern-project-docs",
         "decision": "UPDATED authority to strict",
@@ -116,7 +119,8 @@ elif "config/runtime.toml" in fixture_files:
             "verification": "Document contains strict",
         }],
         "trace": trace(
-            ("TRIGGER", "project-governance", "Knowledge change detected"),
+            ("TRIGGER", "governance-trigger", "GOVERNANCE_REQUIRED"),
+            ("ROUTING", "project-governance", "E2 knowledge change detected"),
             ("KNOWLEDGE_SYNC", "govern-project-docs", "Synced known authority"),
             ("CLOSURE", "project-governance", "CLOSED"),
         ),
@@ -126,13 +130,15 @@ elif "config/runtime.toml" in fixture_files:
     }
 elif "config/plugins.txt" in fixture_files:
     result = {
+        "admission": "GOVERNANCE_REQUIRED",
         "event": "E4",
         "assigned_to": "governance-remediation",
         "decision": "RETAIN: dynamic consumer exists",
         "findings": [],
         "changes": [],
         "trace": trace(
-            ("TRIGGER", "project-governance", "Remediation candidate detected"),
+            ("TRIGGER", "governance-trigger", "GOVERNANCE_REQUIRED"),
+            ("ROUTING", "project-governance", "E4 remediation candidate detected"),
             ("REMEDIATION", "governance-remediation", "RETAIN because a dynamic consumer exists"),
             ("CLOSURE", "project-governance", "CLOSED"),
         ),
@@ -142,13 +148,15 @@ elif "config/plugins.txt" in fixture_files:
     }
 elif "docs/decisions/ADR-014.md" in fixture_files:
     result = {
+        "admission": "GOVERNANCE_REQUIRED",
         "event": "E5",
         "assigned_to": "govern-project-docs",
         "decision": "UNRESOLVED authority conflict",
         "findings": [],
         "changes": [],
         "trace": trace(
-            ("TRIGGER", "project-governance", "Conflicting active authorities detected"),
+            ("TRIGGER", "governance-trigger", "GOVERNANCE_REQUIRED"),
+            ("ROUTING", "project-governance", "E5 governance drift detected"),
             ("KNOWLEDGE_SYNC", "govern-project-docs", "Authority cannot be resolved safely"),
         ),
         "mutation_attempted": False,
@@ -157,13 +165,15 @@ elif "docs/decisions/ADR-014.md" in fixture_files:
     }
 elif "docs/current/state.md" in fixture_files:
     result = {
+        "admission": "GOVERNANCE_REQUIRED",
         "event": "E1",
         "assigned_to": "architecture-governance",
         "decision": "RECONSIDER duplicate state owner",
         "findings": [],
         "changes": [],
         "trace": trace(
-            ("TRIGGER", "project-governance", "Persistent duplicate owner proposal detected"),
+            ("TRIGGER", "governance-trigger", "GOVERNANCE_REQUIRED"),
+            ("ROUTING", "project-governance", "E1 structural change detected"),
             ("SHOULD", "architecture-governance", "RECONSIDER duplicate state owner"),
         ),
         "mutation_attempted": False,
@@ -182,13 +192,15 @@ elif "src/legacy_adapter.py" in fixture_files:
         "next_validation": "Check static/dynamic consumers, contracts, state, and compatibility obligations",
     }]
     result = {
+        "admission": "GOVERNANCE_REQUIRED",
         "event": "E3",
         "assigned_to": "complexity-audit",
         "decision": "AUDIT produced a governance-residue FINDING",
         "findings": findings,
         "changes": [],
         "trace": trace(
-            ("TRIGGER", "project-governance", "Governance audit requested"),
+            ("TRIGGER", "governance-trigger", "GOVERNANCE_REQUIRED"),
+            ("ROUTING", "project-governance", "E3 governance audit detected"),
             ("DID_IT", "complexity-audit", "Produced one falsifiable finding"),
             ("CLOSURE", "project-governance", "Audit request completed"),
         ),
@@ -198,13 +210,14 @@ elif "src/legacy_adapter.py" in fixture_files:
     }
 else:
     result = {
-        "event": "NO_GOVERNANCE",
+        "admission": "NO_GOVERNANCE",
+        "event": None,
         "assigned_to": "none",
         "decision": "NO_GOVERNANCE",
         "findings": [],
         "changes": [],
         "trace": trace(
-            ("TRIGGER", "none", "No long-term project-evolution signal"),
+            ("TRIGGER", "governance-trigger", "NO_GOVERNANCE"),
             ("CLOSURE", "none", "CLOSED without governance"),
         ),
         "mutation_attempted": False,
