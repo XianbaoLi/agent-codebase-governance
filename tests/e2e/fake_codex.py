@@ -21,18 +21,19 @@ if "config/runtime.toml" in fixture_files:
     runtime.write_text(runtime.read_text(encoding="utf-8").replace("permissive", "strict"), encoding="utf-8")
     result = ("E2", "govern-project-docs", "UPDATED authority to strict", [], ["runtime authority synced"], True, "CLOSED")
 elif "config/plugins.txt" in fixture_files:
-    result = ("E4", "simplify-codebase", "RETAIN: dynamic consumer exists", [], [], False, "CLOSED")
+    result = ("E4", "governance-remediation", "RETAIN: dynamic consumer exists", [], [], False, "CLOSED")
 elif "docs/decisions/ADR-014.md" in fixture_files:
     result = ("E5", "govern-project-docs", "UNRESOLVED authority conflict", [], [], False, "OPEN(authority conflict)")
 elif "docs/current/state.md" in fixture_files:
     result = ("E1", "architecture-governance", "RECONSIDER duplicate state owner", [], [], False, "OPEN(reconsider)")
 elif "src/legacy_adapter.py" in fixture_files:
     findings = [{
-        "type": "obsolete-compatibility", "scope": "OrderLegacyAdapter",
-        "claim": "OrderLegacyAdapter may have no current consumer",
-        "evidence": "No static reference was observed", "confidence": "medium"
+        "type": "decision-residue", "scope": "OrderLegacyAdapter",
+        "claim": "OrderLegacyAdapter may be residue from a superseded decision",
+        "evidence": "Current service documentation omits the legacy adapter while ADR-003 is superseded",
+        "confidence": "medium"
     }]
-    result = ("E3", "complexity-audit", "AUDIT produced a candidate FINDING", findings, [], False, "CLOSED")
+    result = ("E3", "complexity-audit", "AUDIT produced a governance-residue FINDING", findings, [], False, "CLOSED")
 else:
     result = ("NO_GOVERNANCE", "none", "NO_GOVERNANCE", [], [], False, "CLOSED")
 
@@ -47,4 +48,3 @@ output.write_text(json.dumps({
     "closure": closure,
     "evidence": ["fake adapter"],
 }, ensure_ascii=False), encoding="utf-8")
-
