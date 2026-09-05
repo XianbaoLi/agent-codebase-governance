@@ -1,80 +1,108 @@
 # 最小验证案例
 
-这些案例用于验证 v0.1 的治理边界是否成立。它们不是永久的自动化状态库；第一版先做人工可复现的验收，不引入新的 findings registry 或测试 engine。
+这些案例用于验证当前项目是否真正保持在 **Project Evolution Governance** 的边界内。它们不是永久状态库，也不引入 findings registry 或 workflow engine。
 
-执行方式：按案例给定一个仓库状态或请求，走一遍对应 SKILL，记录 `event -> assigned_to -> artifacts -> closure`，再和预期比较。
+执行时记录：`event -> assigned_to -> artifacts -> closure`，并检查系统有没有越界去承担普通软件工程能力。
 
-## Case A：防止熵新增
-
-场景：
-
-- 仓库已经有一个 canonical state，`docs/architecture/state.md` 和代码显示 `SessionStore` 是订单会话状态的唯一 owner。
-- Agent 准备在 `billing` 模块新增一套 `SessionSnapshot` 持久状态，字段与 `SessionStore` 重叠，但没有说明为什么现有 owner 无法承担。
-
-预期发生：
-
-1. `project-governance` 将请求识别为 `E1 Structural Change`。
-2. 路由到 `architecture-governance`。
-3. `architecture-governance` 使用 `$govern-project-docs` 找到已有 `state ownership` 权威来源。
-4. 输出 `RECONSIDER` 或 `ALLOW_WITH_CONDITIONS`，并要求：复用现有 owner、解释不可替代性，或证明这是真正不同的权威边界。
-5. 不修改代码或文档，不新增长期 finding 文件。
-
-反预期：
-
-- 直接创建第二份重叠状态；
-- 因为没有 linter 报错就放行；
-- 架构审核被用于普通局部代码修改。
-
-## Case B：权威漂移与 ADR 生命周期
+## Case A：长期结构变化进入 SHOULD
 
 场景：
 
-- `ADR-001` 仍标记为 `active`，声称 `orders.status` 是订单状态的事实来源。
-- 后来代码与 schema 已改用 `order_state` 表作为当前 owner，并有一条新的 `ADR-014` 没有正确声明 supersession。
-- 一个任务继续按旧 ADR 读取 `orders.status`。
+- `SessionStore` 已是订单会话状态唯一 owner。
+- Agent 准备在 `billing` 中新增 `SessionSnapshot` 持久状态，字段明显重叠。
 
-预期发生：
+预期：
 
-1. `project-governance` 识别为 `E5 Governance Drift`，不默认“旧文档错了”。
-2. 路由到 `govern-project-docs`。
-3. `govern-project-docs` 先确定当前 authority：代码、schema 和 `ADR-014` 是否已经一致地拥有该事实。
-4. 若当前 owner 明确，则把 `ADR-001` 标记为 `superseded`，在 `ADR-014` 声明 `supersedes`，并更新 `AGENTS.md` 或等价 context router 指向 `order_state`。
-5. 如果两套权威无法判断，输出 `UNRESOLVED`，不自行折中。
+1. `project-governance` 识别 `E1 Structural Change`。
+2. 路由 `architecture-governance`。
+3. 读取当前 authority，判断这次变化是否应该发生。
+4. 输出 `RECONSIDER` / `ALLOW_WITH_CONDITIONS` / `UNRESOLVED`。
+5. 不替 Agent 设计具体 class、storage pattern 或实现细节。
 
-反预期：
+反预期：直接写实现，或把治理变成设计模式推荐器。
 
-- 直接删除旧 ADR 或改写历史理由；
-- 默认文档永远过时；
-- 让两个 active document 继续同时声称同一 authority。
-
-## Case C：发现并回收存量熵
+## Case B：authority conflict 不自行折中
 
 场景：
 
-- 项目里有一个疑似 obsolete 的 `OrderLegacyAdapter`，以及一套可能与新 canonical service 重复的事件状态。
-- 用户说“帮我检查项目是不是越来越乱”，随后又指出“这个 adapter 是不是多余”。
+- `ADR-001` 与 `ADR-014` 都是 active/canonical，但对订单状态 authority 给出冲突答案。
+- 代码与 schema 也无法单独证明哪一个是当前批准事实。
 
-预期发生：
+预期：
 
-1. 健康检查阶段：`project-governance` 识别 `E3 Health Check`，路由到 `complexity-audit`。
-2. `complexity-audit` 只做只读调查，产出 `Governance Finding`，`claim` 保持假设，例如“`OrderLegacyAdapter` 可能不再有实际生产消费者”。
-3. 用户明确追问具体对象后，`project-governance` 识别 `E4`，路由到 `simplify-codebase`。
-4. `simplify-codebase` 进行 Survey 或授权后的 Change，输出 `REMOVE` / `MERGE` / `RETAIN` / `UNRESOLVED`。
-5. 如果真实结构变化改变了长期权威知识，生成 `Governance Change`，由 `govern-project-docs` 同步；`project-governance` 最终做 Closure。
+1. 识别 `E5 Governance Drift`。
+2. `govern-project-docs` 先判断 authority。
+3. 证据不足时输出 `UNRESOLVED`。
+4. Closure 保持 `OPEN(authority conflict)`。
 
-反预期：
+反预期：默认“旧 ADR 一定错”，或偷偷合并两个冲突事实。
 
-- `complexity-audit` 直接删除文件；
-- `simplify-codebase` 因为用户说“多余”就不做 consumer / contract / persistence 证据直接删除；
-- 删除后不更新 active documentation 或 ADR；
-- 建立长期 findings database 记录每个候选。
+## Case C：治理审计只发现治理偏离
+
+场景：
+
+- 当前 active docs 只描述 `OrderService`。
+- `OrderLegacyAdapter` 仍存在。
+- 创建该 adapter 的 `ADR-003` 已 superseded。
+
+预期：
+
+1. `E3 Governance Audit -> complexity-audit`。
+2. 只读检查当前 decision / authority 与 artifact 的关系。
+3. 产出 `Governance Finding`，例如“`OrderLegacyAdapter` may be residue from a superseded decision”。
+4. Finding 仍是假设，不直接删除。
+
+反预期：因为文件名字含 legacy 就直接判断 dead code；扫描命名、圈复杂度、格式等通用 code-quality smell。
+
+## Case D：删除属于 Governance Remediation
+
+场景：
+
+- Case C 已产生 Finding。
+- 进一步发现 `config/plugins.txt` 通过动态加载器仍引用 `OrderLegacyAdapter`。
+
+预期：
+
+1. `E4 Remediation Candidate -> governance-remediation`。
+2. 检查 decision/authority、consumer、contract、state、context、verification 与 rollback 证据。
+3. 因存在动态 consumer，输出 `RETAIN` 或 `UNRESOLVED`。
+4. 不发生删除。
+
+反预期：路由到 `simplify-codebase`；仅凭静态无引用就删除。
+
+## Case E：普通代码质量问题必须退出治理
+
+场景：
+
+用户说：
+
+> “这个私有函数命名不好，顺便帮我 clean code 一下。”
+
+没有 architecture、contract、authority、长期 state 或长期 project evolution 影响。
+
+预期：`NO_GOVERNANCE`。
+
+这是一个关键负向测试：治理系统不能因为“能做”就接管普通 code review / refactoring。
+
+## Case F：Closure 检查失效上下文是否退役
+
+场景：
+
+- Router V2 已被正式批准并实现。
+- Router V1 的 ADR 已 superseded。
+- 但 `docs/current/router.md` 或 context router 仍把 V1 当成当前事实。
+
+预期：
+
+即使代码和测试都通过，也不能 `CLOSED`；必须先让 active context 与 authority 收敛，或者明确隔离历史文档。
 
 ## 收束检查
 
-每个案例结束时检查：
+每个案例结束时都问：
 
-1. 是否出现了错误的所有权转移？
-2. 是否新增了本不必要的长期状态或 registry？
-3. 是否保留了证据和 authority 判定过程？
-4. 是否能清楚解释最终为 `CLOSED` 或仍为 `OPEN(...)`？
-
+1. 这次治理是在控制 **project evolution**，还是在教 Agent **HOW to code**？
+2. 是否存在明确的 decision / authority / long-term boundary 依据？
+3. Finding 是否仍保持为可证伪假设？
+4. 删除是否有完整治理证据，而不是复杂度直觉？
+5. superseded context 是否已隔离？
+6. 是否能清楚解释为什么是 `CLOSED` 或 `OPEN(...)`？
